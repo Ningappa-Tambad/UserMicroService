@@ -1,5 +1,6 @@
 package com.springacademy.userservice.services;
 
+import com.springacademy.userservice.Exception.ValidTokenNotFoundException;
 import com.springacademy.userservice.models.Token;
 import com.springacademy.userservice.models.User;
 import com.springacademy.userservice.repositories.TokenRepository;
@@ -14,7 +15,7 @@ import java.util.Optional;
 
 
 @Service
-public class UserServiceImpl implements  UserService{
+public class UserServiceImpl implements  UserService {
 
 
     private UserRepository userRepository;
@@ -26,6 +27,7 @@ public class UserServiceImpl implements  UserService{
         this.passwordEncoder = passwordEncoder;
         this.tokenRepository = tokenRepository;
     }
+
 
 
 
@@ -49,13 +51,13 @@ public class UserServiceImpl implements  UserService{
 
         User user=optionalUser.get();
 
-        com.springacademy.userservice.models.Token token=null;
+         Token token=null;
 
         if(passwordEncoder.matches(password,user.getPassword()))
         {
            //Login successful
 
-            token=new com.springacademy.userservice.models.Token();
+            token=new Token();
 
 
              token.setUser(user);
@@ -99,9 +101,32 @@ public class UserServiceImpl implements  UserService{
            return userRepository.save(user);
     }
 
-    @Override
-    public void Logout(String token) {
+//    @Override
+//    public boolean Logout(String token) throws ValidTokenNotFoundException {
+//
+//
+//        return false;
+//    }
 
+    @Override
+    public void Logout(String tokenvalue) throws ValidTokenNotFoundException
+    {
+
+        //We wiil be able to logout particular token
+        //If token is present in the DB if expiry time is greater than current time
+        //we will set the status is false
+
+        Optional<Token> optionalToken=tokenRepository.findByValueAndExpiryAtAndDeleted(tokenvalue,new Date(),false);
+
+        if(optionalToken.isEmpty())
+        {
+            throw new ValidTokenNotFoundException("Token is not valid");
+
+        }
+
+        Token token=optionalToken.get();
+        token.setDeleted(true);
+         tokenRepository.save(token);
     }
 
     @Override
